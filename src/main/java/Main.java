@@ -10,35 +10,37 @@ import java.util.stream.IntStream;
 public class Main {
 
     public static void main(String[] args) {
-        Random r = new Random();
-        List<Integer> nums = Collections.unmodifiableList(
-                IntStream.generate(r::nextInt)
-                .limit(20)
-                .boxed()
-                .toList()
-        );
-        Runnable forLoopTask = () -> {
-            int sum = 0;
-            for(var n : nums) {
-                sum += n;
+        Runnable explicitArrayGeneration = () -> {
+            Random r = new Random();
+            int[] arr = new int[1000000];
+            for(int i = 0; i < arr.length; i++) {
+                arr[i] = r.nextInt();
             }
         };
-        Runnable streamTask = () -> {
-            int sum = nums.stream().mapToInt(Integer::intValue).sum();
-        };
-        Runnable parallelStreamTask = () -> {
-            int sum = nums.stream().parallel().mapToInt(Integer::intValue).sum();
+        Runnable setAllArrayGeneration = () -> {
+            Random r = new Random();
+            int[] arr = new int[1000000];
+            Arrays.setAll(arr, i -> r.nextInt());
         };
 
-        TimingsTest test = new TimingsTestBuilder(forLoopTask, streamTask, parallelStreamTask)
-                .nameTests("Fors", "Streams", "Parallel Streams")
+        Runnable streamArrayGeneration = () -> {
+            Random r = new Random();
+            int[] arr = IntStream.generate(r::nextInt).limit(1000000).toArray();
+        };
+
+        Runnable randomIntsArrayGeneration = () -> {
+            Random r = new Random();
+            int[] arr = r.ints(1000000).toArray();
+        };
+
+        TimingsTest test = new TimingsTestBuilder(explicitArrayGeneration, setAllArrayGeneration, streamArrayGeneration, randomIntsArrayGeneration)
+                .nameTests("Explicit Generation", "Arrays.setAll", "IntStream Generation", "Ints Generation")
                 .setLoopEndingValue(1000)
-                .useAtomicIteratorVariable(null)
                 .build();
         test.start();
         TimingTestResult[] results = test.getResults();
-        TimingsExportFactory factory = new TimingsExportFactory(results, ",").useMovingAverage(100);
+        TimingsExportFactory factory = new TimingsExportFactory(results, ",");
         System.out.println(factory.exportToString());
-        factory.exportRawNumbersByTask(new File("/Users/LVeenker22/Documents/GitHub/Loop Timings/src/test"));
+        factory.exportToFile(new File("/Users/LVeenker22/Documents/GitHub/Loop Timings/src/test/numbers.csv"));
     }
 }
